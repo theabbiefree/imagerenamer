@@ -106,7 +106,7 @@ button:disabled{opacity:0.35;cursor:not-allowed;transform:none;}
       <div class="mode-card selected" id="mode-random" onclick="setMode('random')">
         <span class="mode-icon">&#127922;</span>
         <div class="mode-label">Random code</div>
-        <div class="mode-desc">A unique random 5-character code per file</div>
+        <div class="mode-desc">A unique random 6-character code per file</div>
       </div>
       <div class="mode-card" id="mode-seq" onclick="setMode('seq')">
         <span class="mode-icon">&#128290;</span>
@@ -115,19 +115,12 @@ button:disabled{opacity:0.35;cursor:not-allowed;transform:none;}
       </div>
     </div>
     <div id="random-opts">
-      <div class="opts-grid">
+      <div class="opts-grid" style="grid-template-columns:1fr 1fr">
         <div class="field"><label for="code-type">Code Type</label>
           <select id="code-type">
             <option value="alphanum">Alphanumeric (A-Z 0-9)</option>
             <option value="alpha">Letters only (A-Z)</option>
             <option value="numeric">Numbers only (0-9)</option>
-          </select>
-        </div>
-        <div class="field"><label for="sep">Separator</label>
-          <select id="sep">
-            <option value="_">Underscore _</option>
-            <option value="-">Dash -</option>
-            <option value="">None</option>
           </select>
         </div>
         <div class="field"><label>Case</label>
@@ -139,21 +132,14 @@ button:disabled{opacity:0.35;cursor:not-allowed;transform:none;}
       </div>
     </div>
     <div id="seq-opts" style="display:none">
-      <div class="opts-grid">
+      <div class="opts-grid" style="grid-template-columns:1fr 1fr">
         <div class="field"><label for="seq-start">Start Number</label>
-          <input type="number" id="seq-start" value="0" min="0" max="99999">
-        </div>
-        <div class="field"><label for="seq-sep">Separator</label>
-          <select id="seq-sep">
-            <option value="_">Underscore _</option>
-            <option value="-">Dash -</option>
-            <option value="">None</option>
-          </select>
+          <input type="number" id="seq-start" value="0" min="0" max="999999">
         </div>
         <div class="field"><label>Padding</label>
           <div class="toggle-row">
             <input type="checkbox" id="seq-pad" checked>
-            <label for="seq-pad">Zero-pad to 5 digits</label>
+            <label for="seq-pad">Zero-pad to 6 digits</label>
           </div>
         </div>
       </div>
@@ -183,13 +169,13 @@ button:disabled{opacity:0.35;cursor:not-allowed;transform:none;}
 var files=[],codes=[],busy=false,currentMode='random';
 var CHARS={alphanum:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',alpha:'ABCDEFGHIJKLMNOPQRSTUVWXYZ',numeric:'0123456789'};
 function setMode(m){currentMode=m;document.getElementById('mode-random').classList.toggle('selected',m==='random');document.getElementById('mode-seq').classList.toggle('selected',m==='seq');document.getElementById('random-opts').style.display=m==='random'?'':'none';document.getElementById('seq-opts').style.display=m==='seq'?'':'none';if(files.length){buildCodes();renderTable();}}
-function genRandomCode(){var pool=CHARS[document.getElementById('code-type').value],upper=document.getElementById('upper').checked,c='';for(var i=0;i<5;i++)c+=pool[Math.floor(Math.random()*pool.length)];return upper?c:c.toLowerCase();}
-function buildCodes(){if(currentMode==='seq'){var start=parseInt(document.getElementById('seq-start').value,10)||0,pad=document.getElementById('seq-pad').checked;codes=files.map(function(_,i){var n=start+i;return pad?String(n).padStart(5,'0'):String(n);});}else{codes=files.map(function(){return genRandomCode();});}}
-function getSep(){return currentMode==='seq'?document.getElementById('seq-sep').value:document.getElementById('sep').value;}
-function newName(i){return codes[i]+getSep()+files[i].name;}
+function genRandomCode(){var pool=CHARS[document.getElementById('code-type').value],upper=document.getElementById('upper').checked,c='';for(var i=0;i<6;i++)c+=pool[Math.floor(Math.random()*pool.length)];return upper?c:c.toLowerCase();}
+function buildCodes(){if(currentMode==='seq'){var start=parseInt(document.getElementById('seq-start').value,10)||0,pad=document.getElementById('seq-pad').checked;codes=files.map(function(_,i){var n=start+i;return pad?String(n).padStart(6,'0'):String(n);});}else{codes=files.map(function(){return genRandomCode();});}}
+function fileExt(name){var m=name.match(/(\.[a-zA-Z0-9]{1,10})$/);return m?m[1]:'';}
+function newName(i){return codes[i]+fileExt(files[i].name);}
 function setStatus(msg,cls){var el=document.getElementById('status');el.textContent=msg;el.className=cls||'';}
 function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function renderTable(){var sep=getSep(),rows='';for(var i=0;i<files.length;i++){rows+='<tr><td class="num">'+(i+1)+'</td><td>'+esc(files[i].name)+'</td><td class="newname">'+esc(codes[i]+sep+files[i].name)+'</td></tr>';}document.getElementById('tbody').innerHTML=rows;document.getElementById('table-wrap').style.display=files.length?'':'none';document.getElementById('action-bar').style.display=files.length?'':'none';}
+function renderTable(){var rows='';for(var i=0;i<files.length;i++){rows+='<tr><td class="num">'+(i+1)+'</td><td>'+esc(files[i].name)+'</td><td class="newname">'+esc(newName(i))+'</td></tr>';}document.getElementById('tbody').innerHTML=rows;document.getElementById('table-wrap').style.display=files.length?'':'none';document.getElementById('action-bar').style.display=files.length?'':'none';}
 function renderPreviews(){var grid=document.getElementById('file-grid'),list=document.getElementById('file-list');document.getElementById('file-count').textContent=files.length+' image'+(files.length!==1?'s':'')+' loaded';list.style.display='block';grid.innerHTML='';var shown=Math.min(files.length,40);for(var i=0;i<shown;i++){var div=document.createElement('div');div.className='file-thumb';var img=document.createElement('img');img.src=URL.createObjectURL(files[i]);div.appendChild(img);grid.appendChild(div);}if(files.length>40){var more=document.createElement('div');more.className='file-thumb';more.textContent='+'+(files.length-40);grid.appendChild(more);}}
 function addFiles(list){var imgs=[];for(var i=0;i<list.length;i++){if(list[i].type.startsWith('image/'))imgs.push(list[i]);}if(!imgs.length){setStatus('No image files found.','err');return;}var pw=document.getElementById('progress-wrap'),pl=document.getElementById('progress-label'),pb=document.getElementById('progress-bar');pw.style.display='';pl.textContent='Loading 0 / '+imgs.length+'...';pb.style.width='0%';var idx=0;function chunk(){var end=Math.min(idx+25,imgs.length);while(idx<end){files.push(imgs[idx]);idx++;}pl.textContent='Loading '+idx+' / '+imgs.length+'...';pb.style.width=Math.round(idx/imgs.length*100)+'%';if(idx<imgs.length){setTimeout(chunk,0);}else{buildCodes();pw.style.display='none';renderPreviews();renderTable();setStatus('✦ '+files.length+' files loaded and ready.','ok');}}chunk();}
 var drop=document.getElementById('drop');
@@ -198,14 +184,15 @@ document.getElementById('file-input').addEventListener('change',function(e){addF
 drop.addEventListener('dragover',function(e){e.preventDefault();drop.classList.add('dragover');});
 drop.addEventListener('dragleave',function(){drop.classList.remove('dragover');});
 drop.addEventListener('drop',function(e){e.preventDefault();drop.classList.remove('dragover');addFiles(e.dataTransfer.files);});
-['code-type','sep','upper'].forEach(function(id){document.getElementById(id).addEventListener('change',function(){if(files.length){buildCodes();renderTable();}});});
-['seq-start','seq-sep','seq-pad'].forEach(function(id){document.getElementById(id).addEventListener('change',function(){if(files.length&&currentMode==='seq'){buildCodes();renderTable();}});});
+['code-type','upper'].forEach(function(id){document.getElementById(id).addEventListener('change',function(){if(files.length){buildCodes();renderTable();}});});
+['seq-start','seq-pad'].forEach(function(id){document.getElementById(id).addEventListener('change',function(){if(files.length&&currentMode==='seq'){buildCodes();renderTable();}});});
 function regenerate(){buildCodes();renderTable();setStatus('✦ Codes refreshed.','ok');}
 var CRC_TABLE=(function(){var t=new Uint32Array(256);for(var i=0;i<256;i++){var c=i;for(var j=0;j<8;j++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[i]=c;}return t;})();
 function crc32(data){var crc=0xFFFFFFFF;for(var i=0;i<data.length;i++)crc=CRC_TABLE[(crc^data[i])&0xff]^(crc>>>8);return(crc^0xFFFFFFFF)>>>0;}
 function u16(n){return[n&0xff,(n>>8)&0xff];}
 function u32(n){var b=new Uint8Array(4);new DataView(b.buffer).setUint32(0,n,true);return Array.from(b);}
-async function buildZip(){var enc=new TextEncoder(),parts=[],central=[],offset=0;for(var i=0;i<files.length;i++){setStatus('Packing '+(i+1)+' / '+files.length+'...','');var data=new Uint8Array(await files[i].arrayBuffer()),nameBytes=enc.encode(newName(i)),crc=crc32(data),size=data.length,lh=new Uint8Array([0x50,0x4B,0x03,0x04,...u16(20),...u16(0),...u16(0),...u16(0),...u16(0),...u32(crc),...u32(size),...u32(size),...u16(nameBytes.length),...u16(0),...nameBytes]);central.push({nameBytes:nameBytes,crc:crc,size:size,offset:offset});parts.push(lh);parts.push(data);offset+=lh.length+size;}var cdStart=offset;for(var i=0;i<central.length;i++){var h=central[i],cd=new Uint8Array([0x50,0x4B,0x01,0x02,...u16(20),...u16(20),...u16(0),...u16(0),...u16(0),...u16(0),...u32(h.crc),...u32(h.size),...u32(h.size),...u16(h.nameBytes.length),...u16(0),...u16(0),...u16(0),...u16(0),...u32(0),...u32(h.offset),...h.nameBytes]);parts.push(cd);offset+=cd.length;}var cdSize=offset-cdStart,eocd=new Uint8Array([0x50,0x4B,0x05,0x06,...u16(0),...u16(0),...u16(central.length),...u16(central.length),...u32(cdSize),...u32(cdStart),...u16(0)]);parts.push(eocd);var total=parts.reduce(function(s,p){return s+p.length;},0),out=new Uint8Array(total),pos=0;for(var i=0;i<parts.length;i++){out.set(parts[i],pos);pos+=parts[i].length;}return new Blob([out],{type:'application/zip'});}
+function dosDateTime(){var d=new Date(),dosTime=((d.getHours()&0x1f)<<11)|((d.getMinutes()&0x3f)<<5)|((d.getSeconds()>>1)&0x1f),dosDate=(((d.getFullYear()-1980)&0x7f)<<9)|(((d.getMonth()+1)&0xf)<<5)|(d.getDate()&0x1f);return{time:dosTime,date:dosDate};}
+async function buildZip(){var enc=new TextEncoder(),parts=[],central=[],offset=0,dt=dosDateTime(),FLAG=u16(0x0800);for(var i=0;i<files.length;i++){setStatus('Packing '+(i+1)+' / '+files.length+'...','');var data=new Uint8Array(await files[i].arrayBuffer()),nameBytes=enc.encode(newName(i)),crc=crc32(data),size=data.length,lh=new Uint8Array([0x50,0x4B,0x03,0x04,...u16(20),...FLAG,...u16(0),...u16(dt.time),...u16(dt.date),...u32(crc),...u32(size),...u32(size),...u16(nameBytes.length),...u16(0),...nameBytes]);central.push({nameBytes:nameBytes,crc:crc,size:size,offset:offset});parts.push(lh);parts.push(data);offset+=lh.length+size;}var cdStart=offset;for(var i=0;i<central.length;i++){var h=central[i],cd=new Uint8Array([0x50,0x4B,0x01,0x02,...u16(20),...u16(20),...FLAG,...u16(0),...u16(dt.time),...u16(dt.date),...u32(h.crc),...u32(h.size),...u32(h.size),...u16(h.nameBytes.length),...u16(0),...u16(0),...u16(0),...u16(0),...u32(0),...u32(h.offset),...h.nameBytes]);parts.push(cd);offset+=cd.length;}var cdSize=offset-cdStart,eocd=new Uint8Array([0x50,0x4B,0x05,0x06,...u16(0),...u16(0),...u16(central.length),...u16(central.length),...u32(cdSize),...u32(cdStart),...u16(0)]);parts.push(eocd);var total=parts.reduce(function(s,p){return s+p.length;},0),out=new Uint8Array(total),pos=0;for(var i=0;i<parts.length;i++){out.set(parts[i],pos);pos+=parts[i].length;}return new Blob([out],{type:'application/zip'});}
 async function downloadZip(){if(!files.length||busy)return;busy=true;document.getElementById('dl-btn').disabled=true;setStatus('Building ZIP...','');try{var blob=await buildZip(),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='renamed_images.zip';document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(function(){URL.revokeObjectURL(url);},3000);setStatus('✦ Done! renamed_images.zip saved to your downloads folder.','ok');}catch(err){setStatus('Error: '+err.message,'err');}document.getElementById('dl-btn').disabled=false;busy=false;}
 function clearAll(){files=[];codes=[];document.getElementById('tbody').innerHTML='';document.getElementById('file-grid').innerHTML='';document.getElementById('file-list').style.display='none';document.getElementById('table-wrap').style.display='none';document.getElementById('action-bar').style.display='none';document.getElementById('progress-wrap').style.display='none';setStatus('');}
 </script>
